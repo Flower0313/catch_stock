@@ -11,6 +11,7 @@ from dongfang.Stock import Stock
 import pymysql
 import re
 import datetime
+import logging
 
 
 def catch_stock(timex):
@@ -109,3 +110,4 @@ def catch_stock(timex):
     conn.commit()  # 将剩余的提交
     cursor.close()
     conn.close()
+    logging.warning("执行完毕")
