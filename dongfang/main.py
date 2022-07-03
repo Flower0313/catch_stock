@@ -4,9 +4,6 @@
 # @File : test
 # @Project : python
 import pymysql
-import requests
-import jsonpath
-import json
 from datetime import datetime
 
 from dongfang.get_a_stock_list import catch_stock
@@ -22,7 +19,7 @@ conn = pymysql.connect(
 )
 
 cursor = conn.cursor()
-cursor.execute("SELECT typeDes FROM `df_calendar` where date='" + str(datetime.now().date()) + "'")
+cursor.execute("SELECT typeDes FROM spider_base.df_calendar where date='" + str(datetime.now().date()) + "'")
 result = cursor.fetchone()
 
 if result[0] == '工作日':

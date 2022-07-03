@@ -38,9 +38,9 @@ class Stock:
     highest,lowest,opening_price,t_1_price,total_market_v,circulation_market_v,price_to_b_ratio,increase_this_year,
     time_to_market,outer_disk,inner_disk,aoe,total_share_capital,tradable_shares,total_revenue,total_revenue_r,
     gross_profit_margin,total_assets,debt_ratio,flow_main_forces_today,f97,f98,f99,industry,regional_plate,
-    remark,profit,PE_ratio_s,ttm,net_assets,ds) values("{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}",
+    remark,profit,PE_ratio_s,ttm,net_assets,deal_amount,ds) values("{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}",
     "{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}",
-    "{}","{}","{}","{}","{}")
+    "{}","{}","{}","{}","{}","{}")
     '''
 
     @classmethod
