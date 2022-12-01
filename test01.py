@@ -1,72 +1,106 @@
-# _*_ coding : utf-8 _*_
-# @Time : 2022/5/11 - 11:25
-# @Author : Holden
-# @File : test01
-# @Project : python
+# coding=utf-8
 import json
+import getopt
+import os
+import sys
+import MySQLdb
 
-print("你好")
+# MySQL相关配置，需根据实际情况作出修改
+mysql_host = "holden001"
+mysql_port = "3306"
+mysql_user = "root"
+mysql_passwd = "w654646"
 
-# 单行注释
-'''
-多行注释
-print("你好")
-'''
+# HDFS NameNode相关配置，需根据实际情况作出修改
+hdfs_nn_host = "holden001"
+hdfs_nn_port = "8020"
 
-# list 列表
-# tuple 元组
-# dict 字典
-
-money = 5000 # int
-money2 = 1.2 # float
-sex = True # bool
-sex = False
-# 字符串在python中使用的是单引号或是双引号
-s = 'hello world'
-s2 = "hello world"
-
-name_list = ['结论','你好'] # 列表
-
-age_tuple = (18,19,20)
-print(age_tuple)
-print(type(s2)) # 使用type查询变量类型
-
-age = 18
-name = 'xiaohua'
-print('我的名字是%s,我的年龄是%d' % (name,age))
+# 生成配置文件的目标路径，可根据实际情况作出修改
+output_path = "/opt/module/datax/job/export"
 
 
-name_list.remove('结论')
-
-# 元组的元素不能修改，列表可以修改
-# 当一个元组中只有一个数据时，就是整型，所以定义只有一个元素的元组，需要在后面再加一个空
-#  文件打开了尽量关闭，若文件存在，会先清空原来的数据然后再写
-# read是一字节一字节的读取，而readline是一行一行的读
-# 对象若想写入文件，必须要先序列化，第一种是dumps()，第二种是dump()
-fp = open('test.txt','w')
-names = json.dumps(name_list) # 将对象转换为json字符串
-fp.write(names)
-fp.close()
-
-# dump()将对象转换为字符串的同时，指定一个文件的对象，然后把转换后的字符串写入到这个文件里
-json.dump(name_list,fp)
-
-# 反序列化loads()和load()
-fp = open('test.txt','r')
-content = fp.read()
-json.loads(content) # 反序列化
+def get_connection():
+    return MySQLdb.connect(host=mysql_host, port=int(mysql_port), user=mysql_user, passwd=mysql_passwd, charset='utf8')
 
 
+def get_mysql_meta(database, table):
+    connection = get_connection()
+    cursor = connection.cursor()
+    sql = "SELECT COLUMN_NAME,DATA_TYPE from spider_base.datax_config WHERE from_database=%s AND from_table=%s ORDER BY ORDINAL_POSITION"
+    cursor.execute(sql, [database, table])
+    fetchall = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return fetchall
 
 
+def get_mysql_columns(database, table):
+    return map(lambda x: x[0], get_mysql_meta(database, table))
 
 
+def generate_json(target_database, target_table):
+    job = {
+        "job": {
+            "setting": {
+                "speed": {
+                    "channel": 3
+                },
+                "errorLimit": {
+                    "record": 0,
+                    "percentage": 0.02
+                }
+            },
+            "content": [{
+                "reader": {
+                    "name": "hdfsreader",
+                    "parameter": {
+                        "path": "${exportdir}",
+                        "defaultFS": "hdfs://" + hdfs_nn_host + ":" + hdfs_nn_port,
+                        "column": ["*"],
+                        "fileType": "orc",
+                        "encoding": "UTF-8",
+                        "fieldDelimiter": "\t",
+                        "nullFormat": "\\N"
+                    }
+                },
+                "writer": {
+                    "name": "mysqlwriter",
+                    "parameter": {
+                        "writeMode": "replace",
+                        "username": mysql_user,
+                        "password": mysql_passwd,
+                        "column": get_mysql_columns(target_database, target_table),
+                        "connection": [
+                            {
+                                "jdbcUrl":
+                                    "jdbc:mysql://" + mysql_host + ":" + mysql_port + "/" + target_database + "?useUnicode=true&characterEncoding=utf-8",
+                                "table": [target_table]
+                            }
+                        ]
+                    }
+                }
+            }]
+        }
+    }
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+    with open(os.path.join(output_path, ".".join([target_database, target_table, "json"])), "w") as f:
+        json.dump(job, f)
 
 
+def main(args):
+    target_database = ""
+    target_table = ""
+
+    options, arguments = getopt.getopt(args, '-d:-t:', ['targetdb=', 'targettbl='])
+    for opt_name, opt_value in options:
+        if opt_name in ('-d', '--targetdb'):
+            target_database = opt_value
+        if opt_name in ('-t', '--targettbl'):
+            target_table = opt_value
+
+    generate_json(target_database, target_table)
 
 
-
-
-
-
-
+if __name__ == '__main__':
+    main(sys.argv[1:])

@@ -3,7 +3,7 @@ import json
 import getopt
 import os
 import sys
-import MySQLdb
+import pymysql
 
 mysql_host = "47.122.5.207"
 mysql_port = "3306"
@@ -18,7 +18,7 @@ output_path = "/opt/module/datax/job"
 
 
 def get_connection():
-    return MySQLdb.connect(host=mysql_host, port=int(mysql_port), user=mysql_user, passwd=mysql_passwd,charset='utf8')
+    return pymysql.connect(host=mysql_host, port=int(mysql_port), user=mysql_user, passwd=mysql_passwd,charset='utf8')
 
 
 
@@ -54,7 +54,8 @@ def get_hive_columns(database, table):
             "time": "string",
             "timestamp": "string",
             "date": "string",
-            "text": "string"
+            "text": "string",
+            "bit":"boolean"
         }
         return mappings[mysql_type]
 
@@ -113,7 +114,7 @@ def generate_json(source_database, source_table):
 def main(args):
 
     source_database = "spider_base"
-    source_table = "df_calendar"
+    source_table = "df_a_one_stock_day_kline"
 
     options, arguments = getopt.getopt(args, '-d:-t:', ['sourcedb=', 'sourcetbl='])
     for opt_name, opt_value in options:
@@ -125,6 +126,6 @@ def main(args):
     generate_json(source_database, source_table)
 
 if __name__ == '__main__':
-    reload(sys)
-    sys.setdefaultencoding('utf8')
+    # reload(sys)
+    # sys.setdefaultencoding('utf8')
     main(sys.argv[1:])

@@ -24,7 +24,7 @@ conn = pymysql.connect(
     charset='utf8'
 )
 
-sqlcmd = "select market,code from df_a_stock_detail where current_price<>0"
+sqlcmd = "select market,code from df_a_stock_detail where current_price<>0 and code='000002'"
 cursor = conn.cursor()
 cursor.execute(sqlcmd)
 # 获取数据
@@ -37,17 +37,17 @@ def get_all_kline(str, conn):
     # 必须放在线程里面
     params = {
         'secid': str,
-        'ut': 'fa5fd1943c7b386f172d6893dbfba10b',
+        'ut': '7eea3edcaed734bea9cbfc24409ed989',
         'fields1': 'f1,f2,f3,f4,f5,f6',
         'fields2': 'f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61',
         'klt': '103',  # 月k线
-        'fqt': '0',
+        'fqt': '1',
         'end': '20500101',
         'lmt': Stock.lmt,
         '_': '1653714537250',
     }
 
-    url = "http://81.push2his.eastmoney.com/api/qt/stock/kline/get"
+    url = "http://push2his.eastmoney.com/api/qt/stock/kline/get"
     response = requests.get(url, params=params, cookies=Stock.cookies, headers=Stock.headers, verify=False)
     result_json = jsonpath.jsonpath(json.loads(response.text), '$.data')[0]
     index = 0

@@ -3,31 +3,32 @@
 # @Author : Holden
 # @File : test
 # @Project : python
+import datetime
+import json
+import re
+import time
 from concurrent.futures.thread import ThreadPoolExecutor
 
 import pymysql
+import requests
+from json import JSONDecodeError
+import selenium
 
 conn = pymysql.connect(
-    host='127.0.0.1',
+    host='8.130.49.69',
     port=3306,
     user='root',
-    passwd='root',
-    db='spider_base',
+    passwd='w654646',
     charset='utf8'
 )
-cursor = conn.cursor()
+stocks = []
+for i in range(5187):
+    stocks.append(i + 1)
 
-index = 1
+nums = len(stocks)
+step = 520
+y = nums % step
+stock_num = (y if nums <= 0 else 1) + (nums // step)
 
-
-def show(r):
-    cursor.execute("insert into python values(" + r + ")")
-    conn.commit()
-
-
-with ThreadPoolExecutor(5) as t:
-    for r in range(10):
-        t.submit(show, r)
-
-cursor.close()
-conn.close()
+for i in range(stock_num):
+    print(stocks[i * step:(i + 1) * step])

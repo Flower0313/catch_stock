@@ -3,28 +3,18 @@
 # @Author : Holden
 # @File : test
 # @Project : python
-import pymysql
-from datetime import datetime
-
-from dongfang.get_a_stock_list import catch_stock
+import os
+import threading
 import time
+import smtplib
+import requests
+import json
 
-conn = pymysql.connect(
-    host='127.0.0.1',
-    port=3306,
-    user='root',
-    passwd='root',
-    db='spider_base',
-    charset='utf8'
-)
+df_url = "https://data.eastmoney.com/stockcomment/api/603719.json"
 
-cursor = conn.cursor()
-cursor.execute("SELECT typeDes FROM spider_base.df_calendar where date='" + str(datetime.now().date()) + "'")
-result = cursor.fetchone()
-
-if result[0] == '工作日':
-    catch_stock((int(time.mktime(time.localtime(time.time())))) * 1000)
-
-conn.commit()
-cursor.close()  # 记得释放资源
-conn.close()
+response = requests.get(url=df_url, verify=False)
+content = json.loads(response.text)['ApiResults']['scrd']['focus'][1]
+x = content['XData']
+y = content['Ydata']['StockFocus']
+# 每日15:00后会刷新当天的数据
+print(x[0], y[1])

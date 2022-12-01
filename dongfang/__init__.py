@@ -34,3 +34,11 @@ import time
 # print(i, hour, sum)
 # print(ccc)
 
+
+cid = ""
+lid = 2
+
+if cid and lid == 2:
+    print("草鸟")
+else:
+    print("wudi")

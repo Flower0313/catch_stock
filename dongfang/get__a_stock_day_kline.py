@@ -4,34 +4,26 @@
 # @File : get__a_stock_kline
 # @Project : python
 # 首次执行即可
+import datetime
+
 import pymysql
 import requests
 import logging
 
 from concurrent.futures import ThreadPoolExecutor
 import json
-import datetime
-
-start = datetime.datetime.now()  # 开始时间
-
-conn = pymysql.connect(
-    host='127.0.0.1',
-    port=3306,
-    user='root',
-    passwd='root',
-    db='spider_base',
-    charset='utf8'
-)
-
-sqlcmd = "select market,code from df_a_stock_detail where ds='2022-07-01' and current_price<>0"
-cursor = conn.cursor()
-cursor.execute(sqlcmd)
-# 获取数据
-result = cursor.fetchall()
 
 
-def get_all_kline(str, conn):
-    # 线程中的对象不能共用，必须每个线程特有才行
+def get_all_kline(str):
+    conn = pymysql.connect(
+        host='127.0.0.1',
+        port=3306,
+        user='root',
+        passwd='root',
+        db='spider_base',
+        charset='utf8'
+    )
+
     cursor = conn.cursor()
     # 必须放在线程里面
     params = {
@@ -40,9 +32,9 @@ def get_all_kline(str, conn):
         'fields1': 'f1,f2,f3,f4,f5,f6',
         'fields2': 'f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61',
         'klt': '101',  # 日k线
-        'fqt': '1', # 1才是真实的k线
-        'beg': '0',
-        'end': '20500101',
+        'fqt': '1',  # 1才是真实的k线
+        'beg': '20220831',  # 大于
+        'end': '20500101',  # 小于等于
         '_': '1655883377857',
     }
 
@@ -77,13 +69,13 @@ def get_all_kline(str, conn):
     }
 
     base_sql_one_kline = '''
-            insert into df_a_one_stock_day_kline(market,code,name,dk_total,up_down_rate,up_down_amount,turnover_rate,amplitude,highest,lowest,
-        opening_price,closing_price,deal_amount,deal_vol,year,month_day) values("{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}")
+            insert into df_a_one_stock_day_kline(market,code,name,up_down_rate,up_down_amount,turnover_rate,amplitude,highest,lowest,
+        opening_price,closing_price,deal_amount,deal_vol,year,month_day) values("{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}")
         '''
 
     base_sql_zero_kline = '''
-                insert into df_a_zero_stock_day_kline(market,code,name,dk_total,up_down_rate,up_down_amount,turnover_rate,amplitude,highest,lowest,
-            opening_price,closing_price,deal_amount,deal_vol,year,month_day) values("{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}")
+                insert into df_a_zero_stock_day_kline(market,code,name,up_down_rate,up_down_amount,turnover_rate,amplitude,highest,lowest,
+            opening_price,closing_price,deal_amount,deal_vol,year,month_day) values("{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}","{}")
             '''
 
     # 日k线
@@ -95,27 +87,26 @@ def get_all_kline(str, conn):
     if len(result_json.get('klines')) <= 0:
         return
 
-    for k in result_json.get('klines'):
+    for k in result_json.get('klines'):  #
         index += 1
         klines = k.split(',')
         if 1 == result_json.get('market'):
             e_sql = base_sql_one_kline.format(result_json.get('market'), result_json.get('code'),
-                                                    result_json.get('name'),
-                                                    result_json.get('dktotal'),
-                                                    klines[8], klines[9], klines[10], klines[7],
-                                                    klines[3], klines[4], klines[1], klines[2], klines[5], klines[6],
-                                                    klines[0][:4], klines[0][5:])
+                                              result_json.get('name'),
+                                              klines[8], klines[9], klines[10], klines[7],
+                                              klines[3], klines[4], klines[1], klines[2], klines[5], klines[6],
+                                              klines[0][:4], klines[0][5:])
         elif 0 == result_json.get('market'):
             e_sql = base_sql_zero_kline.format(result_json.get('market'), result_json.get('code'),
-                                                     result_json.get('name'),
-                                                     result_json.get('dktotal'),
-                                                     klines[8], klines[9], klines[10], klines[7],
-                                                     klines[3], klines[4], klines[1], klines[2], klines[5], klines[6],
-                                                     klines[0][:4], klines[0][5:])
+                                               result_json.get('name'),
+                                               klines[8], klines[9], klines[10], klines[7],
+                                               klines[3], klines[4], klines[1], klines[2], klines[5], klines[6],
+                                               klines[0][:4], klines[0][5:])
         cursor.execute(e_sql)
         # 打印日志
         logging.warning(e_sql)
-        conn.commit()
+        if index % 300 == 0:
+            conn.commit()
     conn.commit()
     cursor.close()  # 记得释放资源
     conn.close()
@@ -123,18 +114,23 @@ def get_all_kline(str, conn):
 
 # 开启50个线程
 if __name__ == '__main__':
-    with ThreadPoolExecutor(20) as t:
-        for r in result:
-            t.submit(get_all_kline, str=str(r[0]) + "." + str(r[1]), conn=pymysql.connect(
-                host='127.0.0.1',
-                port=3306,
-                user='root',
-                passwd='root',
-                db='spider_base',
-                charset='utf8'
-            ))
-
+    conn = pymysql.connect(
+        host='127.0.0.1',
+        port=3306,
+        user='root',
+        passwd='root',
+        db='spider_base',
+        charset='utf8'
+    )
+    timez = str(datetime.datetime.now().date())
+    sqlcmd = "select market,code from df_a_stock_detail where ds='2022-07-26'"
+    cursor = conn.cursor()
+    cursor.execute(sqlcmd)
+    # 获取数据
+    result = cursor.fetchall()
     cursor.close()
     conn.close()
-    end = datetime.datetime.now()  # 结束时间
-    # print('--运行时间: %s秒--' % (end - start))
+
+    with ThreadPoolExecutor(20) as t:
+        for r in result:
+            t.submit(get_all_kline, str=str(r[0]) + "." + str(r[1]))
