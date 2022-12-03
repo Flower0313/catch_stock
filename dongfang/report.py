@@ -60,11 +60,19 @@ conn = pymysql.connect(
 def getStocks():
     cursor = conn.cursor()
     cursor.execute(
-        "select distinct if(substr(`code`,1,1)='6','sh','sz') per,`code` from spider_base.df_a_stock_detail where board in (2,6) and ds='2022-12-02' and current_price>0")
+        "select distinct if(substr(`code`,1,1)='6','sh','sz') per,`code` from spider_base.df_a_stock_detail where board in (2,6) and current_price>0")
     content = cursor.fetchall()
     cursor.close()
     conn.close()
     return content
+
+
+def updateReport(date):
+    cursor = conn.cursor()
+    cursor.execute("update df_a_stock_is_report set if_got=1 where report_date='" + date + "'")
+    conn.commit()
+    cursor.close()
+    conn.close()
 
 
 def company_asset(params):
@@ -134,6 +142,7 @@ def all_report(pre, code, date):
     asset = company_asset(params)
     profit = company_profit(params)
     cash = cash_flow(params)
+
     if asset != -1 and cash != -1 and profit != -1:
         result_sql = base_sql.format(code, asset[0], asset[1], asset[2], asset[3], asset[4], asset[5], asset[6],
                                      asset[7], asset[8],
@@ -141,7 +150,8 @@ def all_report(pre, code, date):
                                      profit[3],
                                      profit[4], profit[5], profit[6], profit[7], profit[8], profit[9], profit[10],
                                      profit[11],
-                                     cash[0], cash[1], cash[2], cash[3], cash[4], cash[5], cash[6], cash[7])
+                                     cash[0], cash[1], cash[2], cash[3], cash[4], cash[5], cash[6], cash[7]).replace(
+            "None", "0")
         cursor = conn_min.cursor()
         cursor.execute(result_sql)
         conn_min.commit()
@@ -153,3 +163,4 @@ if __name__ == '__main__':
     with ThreadPoolExecutor(20) as t:
         for i in getStocks():
             t.submit(all_report, i[0], i[1], '2022-09-30')
+        # updateReport('2022-09-30')
